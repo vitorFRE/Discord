@@ -1,10 +1,10 @@
-const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
-const dotenv = require('dotenv');
 const fs = require('node:fs');
 const path = require('node:path');
+const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
+const dotenv = require('dotenv');
 dotenv.config();
-const { TOKEN, CLIENT_ID, GUILD_ID } = process.env;
+const { TOKEN } = process.env;
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -27,28 +27,19 @@ for (const file of commandFiles) {
   }
 }
 
-client.once(Events.ClientReady, (c) => {
-  console.log(`Ready! Logged in as ${c.user.tag}`);
-});
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs
+  .readdirSync(eventsPath)
+  .filter((file) => file.endsWith('.js'));
 
-// Listener de commandos do bot, no servidor
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = interaction.client.commands.get(interaction.commandName);
-
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
-    return;
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file);
+  const event = require(filePath);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args));
   }
+}
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(`Error executing ${interaction.commandName}`);
-    console.error(error);
-  }
-});
-
-//Logando com o token
 client.login(TOKEN);
