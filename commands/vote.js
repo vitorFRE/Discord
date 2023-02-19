@@ -24,6 +24,7 @@ module.exports = {
     const opcoes = interaction.options.getString('opcoes').split(',');
     const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
     let votos = Array(opcoes.length).fill(0);
+    let votosUsuario = {};
 
     const enqueteEmbed = new EmbedBuilder()
       .setColor('#E59906')
@@ -59,20 +60,19 @@ module.exports = {
     });
 
     collector.on('collect', (reaction, user) => {
-      console.log(
-        `Usuário ${user.username} clicou no emoji ${reaction.emoji.name}`,
-      );
+      if (votosUsuario[user.id]) {
+        interaction.channel.send('Você já votou nessa enquete!');
+        return;
+      }
+
       const emojiIndex = emojis.indexOf(reaction.emoji.name);
       if (emojiIndex !== -1) {
         votos[emojiIndex]++;
-        console.log(
-          `Usuário ${user.username} votou na opção ${opcoes[emojiIndex]}.`,
-        );
+        votosUsuario[user.id] = true; // Marcar o usuário como tendo votado
       }
     });
 
     collector.on('end', async (collected) => {
-      console.log(`Collected ${collected.size} items`);
       // Ao finalizar a coleta de votos, construir a mensagem de resultado
       const totalVotos = votos.reduce((total, voto) => total + voto, 0);
 
@@ -105,8 +105,10 @@ module.exports = {
           text: `Total de votos: ${totalVotos}`,
         });
       }
+      await enqueteMessage.delete();
 
-      await interaction.editReply({ embeds: [resultadoEmbed] });
+      /* await interaction.editReply({ embeds: [resultadoEmbed] }); */
+      await interaction.followUp({ embeds: [resultadoEmbed] });
     });
   },
 };
