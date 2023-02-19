@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const wait = require('node:timers/promises').setTimeout;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -100,10 +101,12 @@ module.exports = {
             )
             .join('\n'),
         );
-        resultadoEmbed.setFooter(`Total de votos: ${totalVotos}`);
+        resultadoEmbed.setFooter({
+          text: `Total de votos: ${totalVotos}`,
+        });
       }
 
-      await enqueteMessage.edit({ embeds: [resultadoEmbed] });
+      await interaction.editReply({ embeds: [resultadoEmbed] });
     });
   },
 };

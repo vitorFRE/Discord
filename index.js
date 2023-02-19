@@ -7,7 +7,11 @@ dotenv.config();
 const { TOKEN } = process.env;
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildMessages,
+  ],
 });
 client.commands = new Collection();
 
