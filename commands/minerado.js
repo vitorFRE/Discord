@@ -5,6 +5,6 @@ module.exports = {
     .setName('minerado')
     .setDescription('responda com foi minerado'),
   async execute(interaction) {
-    await interaction.reply('Você foi Minerado');
+    await interaction.reply(`Você foi Minerado ${interaction.user.username}`);
   },
 };

@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const wait = require('node:timers/promises').setTimeout;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -23,6 +22,9 @@ module.exports = {
     const pergunta = interaction.options.getString('pergunta');
     const opcoes = interaction.options.getString('opcoes').split(',');
     const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+    const authorIcon = interaction.user.avatarURL()
+      ? interaction.user.avatarURL()
+      : interaction.guild.iconURL();
     let votos = Array(opcoes.length).fill(0);
     let votosUsuario = {};
 
@@ -31,7 +33,7 @@ module.exports = {
       .setTitle(pergunta)
       .setAuthor({
         name: `${interaction.user.username}`,
-        iconURL: `${interaction.user.avatarURL()}`,
+        iconURL: authorIcon,
       })
       .setThumbnail(`${interaction.guild.iconURL()}`)
       .setDescription(
@@ -56,24 +58,32 @@ module.exports = {
 
     const collector = enqueteMessage.createReactionCollector({
       filter,
-      time: 15000,
+      time: 60000,
     });
 
-    collector.on('collect', (reaction, user) => {
+    collector.on('collect', async (reaction, user) => {
       if (votosUsuario[user.id]) {
-        interaction.channel.send('Você já votou nessa enquete!');
+        await reaction.users.remove(user.id);
         return;
       }
 
       const emojiIndex = emojis.indexOf(reaction.emoji.name);
       if (emojiIndex !== -1) {
         votos[emojiIndex]++;
-        votosUsuario[user.id] = true; // Marcar o usuário como tendo votado
+        votosUsuario[user.id] = true;
+        const opcaoVotada = opcoes[emojiIndex];
+        const reply = await interaction.channel.send({
+          content: `Obrigado ${user.username} por votar em **${opcaoVotada}**, Só o seu primeiro voto que conta.`,
+          ephemeral: true,
+        });
+
+        setTimeout(() => {
+          reply.delete();
+        }, 10000); // 10 segundos em milissegundos
       }
     });
 
     collector.on('end', async (collected) => {
-      // Ao finalizar a coleta de votos, construir a mensagem de resultado
       const totalVotos = votos.reduce((total, voto) => total + voto, 0);
 
       const resultadoEmbed = new EmbedBuilder()
@@ -81,15 +91,13 @@ module.exports = {
         .setTitle(`Resultado da enquete: ${pergunta}`)
         .setAuthor({
           name: `${interaction.user.username}`,
-          iconURL: `${interaction.user.avatarURL()}`,
+          iconURL: authorIcon,
         })
         .setThumbnail(`${interaction.guild.iconURL()}`);
 
       if (totalVotos === 0) {
-        // Se nenhum voto for recebido, exibir mensagem de erro
         resultadoEmbed.setDescription('Nenhum voto foi registrado na enquete.');
       } else {
-        // Caso contrário, exibir contagem de votos por opção
         resultadoEmbed.setDescription(
           opcoes
             .map(
