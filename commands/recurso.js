@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, hyperlink } = require('discord.js');
+const fetch = require('node-fetch');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -30,12 +31,20 @@ module.exports = {
 
     const recurso = interaction.options.getString('nome');
     const descricao = interaction.options.getString('descricao');
-
     const link = interaction.options.getString('link');
 
     const authorIcon = interaction.user.avatarURL()
       ? interaction.user.avatarURL()
       : interaction.guild.iconURL();
+
+    const response = await fetch(link);
+    const body = await response.text();
+
+    const imageMatch = body.match(
+      /<meta.*property="og:image".*content="(.*)".*>/i,
+    );
+    const image = imageMatch ? imageMatch[1] : '';
+    const url = response.url;
 
     const recursoEmbed = new EmbedBuilder()
       .setColor('#fff')
@@ -46,8 +55,9 @@ module.exports = {
       })
       .setThumbnail(`${interaction.guild.iconURL()}`)
       .setDescription(descricao)
-      .setImage(link)
-      .setURL(link)
+      .addFields({ name: 'Descrição', value: descricao })
+      .addFields({ name: 'Link', value: hyperlink(url, url) })
+      .setFooter({ text: 'Clique no nome do recurso para ir para o site!' })
       .setTimestamp();
 
     const recursoMessage = await interaction.followUp({
