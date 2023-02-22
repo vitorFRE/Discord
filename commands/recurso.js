@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, hyperlink } = require('discord.js');
 const fetch = require('node-fetch');
+const cheerio = require('cheerio');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -31,20 +32,37 @@ module.exports = {
 
     const recurso = interaction.options.getString('nome');
     const descricao = interaction.options.getString('descricao');
+
     const link = interaction.options.getString('link');
 
     const authorIcon = interaction.user.avatarURL()
       ? interaction.user.avatarURL()
       : interaction.guild.iconURL();
 
-    const response = await fetch(link);
-    const body = await response.text();
+    // Verificando se o link é valido com http/s
+    const linkRegex = /^(http|https):\/\/[^ "]+$/;
+    if (!linkRegex.test(link)) {
+      const errorMessage = await interaction.followUp({
+        content: `${interaction.user}, o link fornecido não é válido. Certifique-se de fornecer um link válido começando com "http://" ou "https://", Dica se você copiar o link diretamente do navegador, ele já deve vir com um desses prefixos.`,
+        ephemeral: true,
+      });
 
-    const imageMatch = body.match(
-      /<meta.*property="og:image".*content="(.*)".*>/i,
-    );
-    const image = imageMatch ? imageMatch[1] : '';
-    const url = response.url;
+      setTimeout(() => {
+        errorMessage.delete();
+      }, 30000); // settimeout para excluir depois de 30 segundos
+      return;
+    }
+
+    //Fetch da image de preview
+    let imgSrc = '';
+    try {
+      const res = await fetch(link);
+      const html = await res.text();
+      const $ = cheerio.load(html);
+      imgSrc = $('meta[property="og:image"]').attr('content');
+    } catch (err) {
+      console.error(err);
+    }
 
     const recursoEmbed = new EmbedBuilder()
       .setColor('#fff')
@@ -53,10 +71,25 @@ module.exports = {
         name: `${interaction.user.username}`,
         iconURL: authorIcon,
       })
-      .setThumbnail(`${interaction.guild.iconURL()}`)
-      .setDescription(descricao)
       .addFields({ name: 'Descrição', value: descricao })
-      .addFields({ name: 'Link', value: hyperlink(url, url) })
+      .setURL(link)
+      .addFields({ name: 'Link', value: hyperlink(link, link) });
+
+    if (imgSrc) {
+      // Verifica se a imagem é um SVG
+      if (
+        imgSrc.endsWith('.svg') ||
+        (await fetch(imgSrc).then((res) =>
+          res.headers.get('content-type').startsWith('image/svg+xml'),
+        ))
+      ) {
+        console.log('Imagem é um SVG, não será definida no embed');
+      } else {
+        recursoEmbed.setImage(imgSrc);
+      }
+    }
+
+    recursoEmbed
       .setFooter({ text: 'Clique no nome do recurso para ir para o site!' })
       .setTimestamp();
 
