@@ -39,7 +39,6 @@ module.exports = {
       ? interaction.user.avatarURL()
       : interaction.guild.iconURL();
 
-    // Verificando se o link é valido com http/s
     const linkRegex = /^(http|https):\/\/[^ "]+$/;
     if (!linkRegex.test(link)) {
       const errorMessage = await interaction.followUp({
@@ -49,11 +48,10 @@ module.exports = {
 
       setTimeout(() => {
         errorMessage.delete();
-      }, 30000); // settimeout para excluir depois de 30 segundos
+      }, 30000);
       return;
     }
 
-    //Fetch da image de preview
     let imgSrc = '';
     try {
       const res = await fetch(link);
@@ -76,7 +74,6 @@ module.exports = {
       .addFields({ name: 'Link', value: hyperlink(link, link) });
 
     if (imgSrc) {
-      // Verifica se a imagem é um SVG
       if (
         imgSrc.endsWith('.svg') ||
         (await fetch(imgSrc).then((res) =>

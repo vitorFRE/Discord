@@ -79,7 +79,7 @@ module.exports = {
 
         setTimeout(() => {
           reply.delete();
-        }, 10000); // 10 segundos em milissegundos
+        }, 10000);
       }
     });
 
@@ -115,7 +115,6 @@ module.exports = {
       }
       await enqueteMessage.delete();
 
-      /* await interaction.editReply({ embeds: [resultadoEmbed] }); */
       await interaction.followUp({ embeds: [resultadoEmbed] });
     });
   },
