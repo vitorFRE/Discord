@@ -1,17 +1,11 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { createConfirmationMessage } = require('../utils/confirmation');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('perfil')
-    .setDescription('definir informações do perfil')
-    .addStringOption((option) =>
-      option
-        .setName('cargo')
-        .setDescription('Junior,Pleno,Senior')
-        .setRequired(true),
-    ),
+    .setName('teste')
+    .setDescription('testando o confirm'),
   async execute(interaction) {
-    const cargo = interaction.options.getString('cargo');
-    await interaction.reply(`${cargo}`);
+    await createConfirmationMessage(interaction);
   },
 };
